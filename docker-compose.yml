@@ -1,0 +1,44 @@
+version: '3'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    networks:
+      - jenkins_network
+    environment:
+      - JENKINS_SLAVE_AGENT_PORT=50000
+      - JENKINS_JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - NEXUS_URL=http://nexus3:8081/repository/maven-releases/
+
+  jenkins-slave:
+    image: jenkins/inbound-agent
+    labels:
+      - "jenkins/slave"
+    networks:
+      - jenkins_network
+    environment:
+      - JENKINS_AGENT_NAME=jenkins-slave
+      - JENKINS_URL=http://host.docker.internal:8080
+      - JENKINS_SECRET=secret
+      - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
+
+  nexus3:
+    image: sonatype/nexus3
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - nexus_data:/nexus-data
+    networks:
+      - jenkins_network
+
+volumes:
+  jenkins_home:
+  nexus_data:
+
+networks:
+  jenkins_network:
